@@ -6,7 +6,7 @@
 
 ## Future Plan
 - [ ] CLI
-- [ ] Support for longer chat messages (`[{'role': 'user', 'content': 'xxxx'}, ...]`)
+- [x] Support for longer chat messages (`[{'role': 'user', 'content': 'xxxx'}, ...]`)
 - [ ] Dockerize
 
 ## Usage

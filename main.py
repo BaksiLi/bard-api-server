@@ -34,6 +34,7 @@ def get_current_timestamp():
 class ChatCompletionRequest(BaseModel):
     model: str
     messages: List[Dict[str, str]]
+    context_id: Optional[str] = None
 
 
 class ChatCompletionResponse(BaseModel):
@@ -41,9 +42,24 @@ class ChatCompletionResponse(BaseModel):
     object: str
     created: int
     model: str
+    context_id: str
     # usage: Dict[str, int]
     choices: List[Dict[str, Any]]
 
+def compress_message(messages: List[Dict[str, str]]) -> str:
+    """Compresses a list of messages into a single message.
+    """
+    compressed_message = "You are assistant, I am user.\n"
+
+    for message in messages:
+        if message["role"] == "assistant":
+            compressed_message += f"\n[Assistant]:\n\t{message['content']}\n"
+        elif message["role"] == "user":
+            compressed_message += f"\n[User]:\n\t{message['content']}\n"
+        else: # system
+            compressed_message = message['content'] + '\n' + compressed_message
+
+    return compressed_message
 
 @router.post("/completions", response_model=ChatCompletionResponse)
 async def chat_completions(completion: ChatCompletionRequest,
@@ -61,8 +77,8 @@ async def chat_completions(completion: ChatCompletionRequest,
             detail=f"The model `{completion.model}` does not exist")
 
     # Call the Bard API
-    answer = await bard.get_answer(completion.messages[-1]["content"])
-    # answer = bard.get_answer(completion.messages[-1]["content"])
+    # answer = await bard.get_answer(completion.messages[-1]["content"])
+    answer = await bard.get_answer(compress_message(completion.messages))
 
     # Return the response
     return {
@@ -74,6 +90,7 @@ async def chat_completions(completion: ChatCompletionRequest,
         get_current_timestamp(),
         "model":
         "bard",
+        "context_id": answer.get('conversation_id'),
         "choices": [{
             "message": {
                 "role": "assistant",
