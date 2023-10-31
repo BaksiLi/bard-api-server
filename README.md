@@ -1,6 +1,8 @@
 # Bard API Server
  An OpenAI style API server for Google Bard using the reverse API
 
+<img width="842" alt="Screenshot 2023-11-01 at 01 00 29" src="https://github.com/BaksiLi/bard-api-server/assets/26314680/107b28dc-856a-4168-a9ab-ddd40c945e17">
+
 
 ## Usage
 
