@@ -1,16 +1,19 @@
 # Bard API Server
  An OpenAI style API server for Google Bard using the [reversed API](https://github.com/dsdanielpark/Bard-API).
 
-<img width="550" alt="Screenshot 2023-11-01 at 01 00 29" src="https://github.com/BaksiLi/bard-api-server/assets/26314680/107b28dc-856a-4168-a9ab-ddd40c945e17">
+<img width="650" alt="Demo" src="./assets/demo.png">
 
 
 ## Future Plan
-- [ ] CLI
 - [x] Support for longer chat messages (`[{'role': 'user', 'content': 'xxxx'}, ...]`)
+- [ ] CLI
 - [ ] Dockerize
 
 ## Usage
+Run the server by `python main.py`.
 
+### With OpenAI
+Then in your script, replace API_BASE and API_KEY with the ones in the `main.py`:
 ```
 import openai
 
@@ -18,28 +21,19 @@ openai.api_base = "http://localhost:8000/v1"
 openai.api_key = '****'
 
 completion = openai.Completion.create(model="bard", 
-                                      messages=[{'role': 'user', 'content': 'Hello'}])
-print(completion)
+                                      messages=[{'role': 'user', 'content': 'Hello! Who are you?'}])
+print(completion.choices[-1].message.content)
 ```
 
 This would give you:
 ```
-{
-  "id": "3260b2ec-52b1-4a10-84c4-cdbaa31dd3f2",
-  "object": "chat.completion",
-  "created": 1698771134,
-  "model": "bard",
-  "choices": [
-    {
-      "message": {
-        "role": "assistant",
-        "content": "Hello! How may I help you today?\r\n\r\nI am excited to be able to help you with your tasks and answer your questions. I am still under development, but I am learning new things every day. I am always happy to receive feedback, so please let me know if there is anything I can do to improve."
-      },
-      "finish_reason": "stop",
-      "index": 0
-    }
-  ]
-}
+Hello! I am Bard, a large language model from Google AI, trained on a massive dataset of text and code. I can generate text, translate languages, write different kinds of creative content, and answer your questions in an informative way. I am still under development, but I have learned to perform many kinds of tasks, including
+
+* I will try my best to follow your instructions and complete your requests thoughtfully.
+* I will use my knowledge to answer your questions in a comprehensive and informative way, even if they are open ended, challenging, or strange.
+* I will generate different creative text formats of text content, like poems, code, scripts, musical pieces, email, letters, etc. I will try my best to fulfill all your requirements.
+
+How can I help you today?
 ```
 
 Which is equivalent to 
@@ -52,10 +46,43 @@ openai.api_key = '****'
 completion = openai.ChatCompletion.create(
   model="gpt-3.5-turbo",
   messages=[
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "Hello!"}
+    {"role": "user", "content": "Hello! Who are you?"}
   ]
 )
 
-print(completion)
+print(completion.choices[-1].message.content)
+```
+
+You can also inject system or assistant prompts, like in the [demo](./assets/demo.png).
+
+### With Requests (or cURL)
+Similar to the OpenAI’s completion API, you can call it using requests or just cURL.
+
+```
+import requests
+
+token = "****"
+
+request_body = {
+    "model": "bard",
+    "messages": [
+        {
+            "content": "How to transmit Restone signals (directly) downwards in Minecraft Bedrock?"
+        }
+    ]
+}
+
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Content-Type": "application/json"
+}
+
+response = requests.post("http://localhost:8000/v1/completions", headers=headers, json=request_body)
+
+if response.status_code == 200:
+    response_json = response.json()
+    print(response_json["choices"][0]["message"]["content"])
+else:
+    raise Exception(response.content)
+
 ```
