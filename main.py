@@ -22,7 +22,6 @@ auth_key = 'xxxx'
 bard_token = '<__Secure-1PSID>'
 bard = BardAsync(token=bard_token)
 
-
 def generate_chat_completion_id():
     return str(uuid.uuid4())
 
@@ -46,20 +45,25 @@ class ChatCompletionResponse(BaseModel):
     # usage: Dict[str, int]
     choices: List[Dict[str, Any]]
 
-def compress_message(messages: List[Dict[str, str]]) -> str:
+
+def compress_messages(messages: List[Dict[str, str]]) -> str:
     """Compresses a list of messages into a single message.
     """
-    compressed_message = "You are assistant, I am user.\n"
+    if len(messages) == 1:
+        return messages[-1]['content']
+
+    compressed_message = "You are [Assistant], I am [User].\n"
 
     for message in messages:
-        if message["role"] == "assistant":
+        if message["role"] == "assistant" and message["content"]:
             compressed_message += f"\n[Assistant]:\n\t{message['content']}\n"
-        elif message["role"] == "user":
+        elif message["role"] == "user" and message["content"]:
             compressed_message += f"\n[User]:\n\t{message['content']}\n"
-        else: # system
+        elif message["role"] == "system" and message["content"]:
             compressed_message = message['content'] + '\n' + compressed_message
 
     return compressed_message
+
 
 @router.post("/completions", response_model=ChatCompletionResponse)
 async def chat_completions(completion: ChatCompletionRequest,
@@ -78,7 +82,8 @@ async def chat_completions(completion: ChatCompletionRequest,
 
     # Call the Bard API
     # answer = await bard.get_answer(completion.messages[-1]["content"])
-    answer = await bard.get_answer(compress_message(completion.messages))
+    bard = BardAsync(token=bard_token)
+    answer = await bard.get_answer(compress_messages(completion.messages))
 
     # Return the response
     return {
@@ -90,7 +95,8 @@ async def chat_completions(completion: ChatCompletionRequest,
         get_current_timestamp(),
         "model":
         "bard",
-        "context_id": answer.get('conversation_id'),
+        "context_id":
+        answer.get('conversation_id'),
         "choices": [{
             "message": {
                 "role": "assistant",
@@ -114,3 +120,4 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
