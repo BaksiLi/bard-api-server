@@ -2,16 +2,25 @@
 # -*- coding: utf-8 -*-
 import time
 import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from fastapi import Body, FastAPI, HTTPException, APIRouter
+from fastapi import APIRouter, Body, Depends, FastAPI, HTTPException
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 
 from bardapi import BardAsync
 
-token = '<__Secure-1PSID>'
+# API Endpoint
 app = FastAPI()
 router = APIRouter(prefix="/v1")
+
+# Authentication
+bearer = HTTPBearer()
+auth_key = 'xxxx'
+
+# Reverse Bard API
+bard_token = '<__Secure-1PSID>'
+bard = BardAsync(token=bard_token)
 
 
 def generate_chat_completion_id():
@@ -37,8 +46,13 @@ class ChatCompletionResponse(BaseModel):
 
 
 @router.post("/completions", response_model=ChatCompletionResponse)
-async def chat_completions(completion: ChatCompletionRequest):
+async def chat_completions(completion: ChatCompletionRequest,
+                           auth_key: str = Depends(bearer)):
     """Generates a response to a prompt or a conversation."""
+
+    # Validate the token
+    if auth_key.credentials != "****abc":
+        raise HTTPException(status_code=401, detail="Invalid token")
 
     # Check if the model is supported
     if completion.model != "bard":
@@ -47,12 +61,10 @@ async def chat_completions(completion: ChatCompletionRequest):
             detail=f"The model `{completion.model}` does not exist")
 
     # Call the Bard API
-    bard = BardAsync(token=token)
     answer = await bard.get_answer(completion.messages[-1]["content"])
+    # answer = bard.get_answer(completion.messages[-1]["content"])
 
-    # Call the OpenAI API here
     # Return the response
-
     return {
         "id":
         generate_chat_completion_id(),
@@ -72,9 +84,12 @@ async def chat_completions(completion: ChatCompletionRequest):
         }]
     }
 
+
 @router.post("/chat/completions", response_model=ChatCompletionResponse)
-async def chat_completions_alias():
-    return chat_completions(completion=ChatCompletionRequest(model="bard"))
+async def chat_completions_alias(completion: ChatCompletionRequest,
+                                 auth_key: str = Depends(bearer)):
+    return await chat_completions(completion=completion, auth_key=auth_key)
+
 
 app.include_router(router)
 
